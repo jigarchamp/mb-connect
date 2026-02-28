@@ -28,7 +28,7 @@ export async function proxy(request: NextRequest) {
 
   const { pathname } = request.nextUrl
   const isAuthPage = pathname === '/login' || pathname === '/signup'
-  const isPublic = isAuthPage || pathname.startsWith('/join/')
+  const isPublic = pathname === '/' || isAuthPage || pathname.startsWith('/join/')
 
   if (!user && !isPublic) {
     const url = request.nextUrl.clone()
@@ -38,7 +38,7 @@ export async function proxy(request: NextRequest) {
 
   if (user && isAuthPage) {
     const url = request.nextUrl.clone()
-    url.pathname = '/discover'
+    url.pathname = '/'
     return NextResponse.redirect(url)
   }
 

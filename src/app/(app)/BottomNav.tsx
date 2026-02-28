@@ -50,14 +50,14 @@ function ChartIcon() {
 }
 
 const SCOUT_NAV: NavItem[] = [
-  { href: '/discover', label: 'Discover', icon: <CompassIcon /> },
+  { href: '/', label: 'Discover', icon: <CompassIcon /> },
   { href: '/my-badges', label: 'My MBs', icon: <BadgeIcon /> },
   { href: '/classes', label: 'Classes', icon: <CalendarIcon /> },
   { href: '/profile', label: 'Profile', icon: <UserIcon /> },
 ]
 
 const COUNSELOR_NAV: NavItem[] = [
-  { href: '/discover', label: 'Discover', icon: <CompassIcon /> },
+  { href: '/', label: 'Discover', icon: <CompassIcon /> },
   { href: '/demand', label: 'Demand', icon: <ChartIcon /> },
   { href: '/classes', label: 'My Classes', icon: <CalendarIcon /> },
   { href: '/profile', label: 'Profile', icon: <UserIcon /> },
