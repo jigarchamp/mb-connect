@@ -51,6 +51,12 @@ export interface MeritBadge {
   category: string
   requirements: { number: string; text: string }[] | null
   image_url: string | null
+  min_age: number | null
+  min_rank: Rank | null
+  difficulty: number | null
+  typical_weeks: number | null
+  bsa_url: string | null
+  worksheet_url: string | null
   created_at: string
 }
 

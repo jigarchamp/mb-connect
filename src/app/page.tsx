@@ -1,5 +1,6 @@
 import { createClient } from '@/lib/supabase/server'
 import CatalogHeader from './CatalogHeader'
+import Hero from './Hero'
 import CatalogClient from './CatalogClient'
 import BottomNav from './(app)/BottomNav'
 
@@ -7,11 +8,11 @@ export default async function Home() {
   const supabase = await createClient()
   const { data: { user } } = await supabase.auth.getUser()
 
-  // Fetch all merit badges — public data, no auth required
-  const { data: badges } = await supabase
-    .from('merit_badges')
-    .select('id, name, eagle_required, category')
-    .order('name')
+  // Fetch all merit badges and the set of badge IDs with active classes — both public
+  const [{ data: badges }, { data: activeBadges }] = await Promise.all([
+    supabase.from('merit_badges').select('id, name, eagle_required, category').order('name'),
+    supabase.rpc('get_active_class_badge_ids'),
+  ])
 
   let interests: string[] = []
   let completions: string[] = []
@@ -33,12 +34,14 @@ export default async function Home() {
   return (
     <div className="min-h-screen bg-gray-50 flex flex-col">
       <CatalogHeader isAuthenticated={!!user} firstName={profile?.first_name} />
+      <Hero isAuthenticated={!!user} />
       <main className={profile ? 'flex-1 pb-20' : 'flex-1'}>
         <CatalogClient
           badges={badges ?? []}
           isAuthenticated={!!user}
           initialInterests={interests}
           initialCompletions={completions}
+          badgesWithClasses={(activeBadges ?? []).map((r: { merit_badge_id: string }) => r.merit_badge_id)}
         />
       </main>
       {profile && <BottomNav role={profile.role} />}

@@ -1,7 +1,9 @@
 import { createClient } from '@/lib/supabase/server'
 import { redirect } from 'next/navigation'
+import Link from 'next/link'
 import { signout } from '@/app/actions/auth'
 import { RANK_LABELS, type Rank } from '@/types/database'
+import InviteLinks from './InviteLinks'
 
 export default async function ProfilePage() {
   const supabase = await createClient()
@@ -15,6 +17,26 @@ export default async function ProfilePage() {
     .single()
 
   const troop = profile?.troop as { name: string; unit_number: string } | null
+
+  // Fetch invite tokens for admins — latest per role, ordered newest first
+  let invites: { role: string; token: string; accepted: boolean }[] = []
+  if (profile?.role === 'admin' && profile.troop_id) {
+    const { data: rawInvites } = await supabase
+      .from('invitations')
+      .select('role, token, accepted_at')
+      .eq('troop_id', profile.troop_id)
+      .in('role', ['scout', 'counselor', 'leader'])
+      .order('invited_at', { ascending: false })
+
+    // Keep only the most recent token per role
+    const seen = new Set<string>()
+    for (const inv of rawInvites ?? []) {
+      if (!seen.has(inv.role)) {
+        seen.add(inv.role)
+        invites.push({ role: inv.role, token: inv.token, accepted: !!inv.accepted_at })
+      }
+    }
+  }
 
   return (
     <div className="px-4 py-6">
@@ -68,6 +90,26 @@ export default async function ProfilePage() {
           <p className="text-sm text-gray-900">{user.email}</p>
         </div>
       </div>
+
+      {profile?.role === 'admin' && <InviteLinks invites={invites} />}
+
+      {profile?.role === 'scout' && (
+        profile.rank && profile.date_of_birth ? (
+          <Link
+            href="/onboarding?returnTo=/profile"
+            className="mt-4 block w-full text-center btn-secondary border border-gray-200"
+          >
+            Edit profile
+          </Link>
+        ) : (
+          <Link
+            href="/onboarding?returnTo=/profile"
+            className="mt-4 block w-full text-center px-4 py-2.5 rounded-xl text-sm font-medium bg-amber-50 border border-amber-200 text-amber-800 hover:bg-amber-100 transition-colors"
+          >
+            Complete your setup →
+          </Link>
+        )
+      )}
 
       <form action={signout} className="mt-6">
         <button type="submit" className="w-full btn-secondary border border-gray-200">

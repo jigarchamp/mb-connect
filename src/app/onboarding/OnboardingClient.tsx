@@ -7,8 +7,16 @@ import { RANK_LABELS, RANK_ORDER, type Profile, type Invitation } from '@/types/
 
 type Step = 'choose' | 'create_troop' | 'show_invites' | 'join_with_code' | 'complete_profile'
 
+interface ProfileDefaults {
+  rank?: string | null
+  dateOfBirth?: string | null
+  patrol?: string | null
+  bsaMemberId?: string | null
+}
+
 interface Props {
   profile: Profile & { troop?: { id: string; name: string; unit_number: string } | null }
+  returnTo?: string
 }
 
 function getInitialStep(profile: Props['profile']): Step {
@@ -162,25 +170,38 @@ function JoinWithCodeStep({ onSuccess }: { onSuccess: () => void }) {
 }
 
 // ─── Complete Scout Profile Step ──────────────────────────────────────────────
-function CompleteProfileStep({ role }: { role: string }) {
+function CompleteProfileStep({
+  role,
+  defaults = {},
+  returnTo,
+}: {
+  role: string
+  defaults?: ProfileDefaults
+  returnTo?: string
+}) {
   const [state, action, isPending] = useActionState(completeProfile, null)
   const isScout = role === 'scout'
+  const isEditing = !!returnTo
 
   return (
     <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-6">
-      <h2 className="text-lg font-semibold text-gray-900 mb-1">Complete your profile</h2>
+      <h2 className="text-lg font-semibold text-gray-900 mb-1">
+        {isEditing ? 'Edit your profile' : 'Complete your profile'}
+      </h2>
       <p className="text-sm text-gray-500 mb-5">
         {isScout ? 'Tell us about your scouting journey.' : 'A few more details to get you started.'}
       </p>
 
       <form action={action} className="space-y-4">
+        {returnTo && <input type="hidden" name="returnTo" value={returnTo} />}
+
         {isScout && (
           <>
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1.5">
                 Current rank <span className="text-red-500">*</span>
               </label>
-              <select name="rank" required className="input">
+              <select name="rank" required defaultValue={defaults.rank ?? ''} className="input">
                 <option value="">Select rank…</option>
                 {RANK_ORDER.map((r) => (
                   <option key={r} value={r}>{RANK_LABELS[r]}</option>
@@ -192,21 +213,39 @@ function CompleteProfileStep({ role }: { role: string }) {
               <label className="block text-sm font-medium text-gray-700 mb-1.5">
                 Date of birth <span className="text-red-500">*</span>
               </label>
-              <input name="dateOfBirth" type="date" required className="input" />
+              <input
+                name="dateOfBirth"
+                type="date"
+                required
+                defaultValue={defaults.dateOfBirth ?? ''}
+                className="input"
+              />
             </div>
 
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1.5">
                 Patrol <span className="text-gray-400 font-normal">(optional)</span>
               </label>
-              <input name="patrol" type="text" placeholder="e.g. Eagle Patrol" className="input" />
+              <input
+                name="patrol"
+                type="text"
+                placeholder="e.g. Eagle Patrol"
+                defaultValue={defaults.patrol ?? ''}
+                className="input"
+              />
             </div>
 
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1.5">
                 BSA Member ID <span className="text-gray-400 font-normal">(optional)</span>
               </label>
-              <input name="bsaMemberId" type="text" placeholder="For future ScoutBook sync" className="input" />
+              <input
+                name="bsaMemberId"
+                type="text"
+                placeholder="For future ScoutBook sync"
+                defaultValue={defaults.bsaMemberId ?? ''}
+                className="input"
+              />
             </div>
           </>
         )}
@@ -216,7 +255,7 @@ function CompleteProfileStep({ role }: { role: string }) {
         )}
 
         <button type="submit" disabled={isPending} className="btn-primary w-full">
-          {isPending ? 'Saving…' : 'Continue to app'}
+          {isPending ? 'Saving…' : isEditing ? 'Save changes' : 'Continue to app'}
         </button>
       </form>
     </div>
@@ -224,7 +263,7 @@ function CompleteProfileStep({ role }: { role: string }) {
 }
 
 // ─── Main Onboarding Component ────────────────────────────────────────────────
-export function OnboardingClient({ profile }: Props) {
+export function OnboardingClient({ profile, returnTo }: Props) {
   const [step, setStep] = useState<Step>(getInitialStep(profile))
   const [invites, setInvites] = useState<Pick<Invitation, 'token' | 'role'>[]>([])
   const router = useRouter()
@@ -282,5 +321,16 @@ export function OnboardingClient({ profile }: Props) {
     )
   }
 
-  return <CompleteProfileStep role={profile.role} />
+  return (
+    <CompleteProfileStep
+      role={profile.role}
+      defaults={{
+        rank: profile.rank,
+        dateOfBirth: profile.date_of_birth,
+        patrol: profile.patrol,
+        bsaMemberId: profile.bsa_member_id,
+      }}
+      returnTo={returnTo}
+    />
+  )
 }

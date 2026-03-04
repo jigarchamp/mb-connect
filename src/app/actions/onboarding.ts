@@ -1,6 +1,6 @@
 'use server'
 
-import { createClient } from '@/lib/supabase/server'
+import { createClient, createServiceClient } from '@/lib/supabase/server'
 import { redirect } from 'next/navigation'
 import type { Invitation, Role } from '@/types/database'
 
@@ -14,7 +14,9 @@ export async function createTroop(
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) redirect('/login')
 
-  const { data: troop, error } = await supabase
+  const db = createServiceClient()
+
+  const { data: troop, error } = await db
     .from('troops')
     .insert({
       name: formData.get('name') as string,
@@ -29,7 +31,7 @@ export async function createTroop(
   if (error) return { error: error.message }
 
   // Make the creator the admin
-  await supabase
+  await db
     .from('profiles')
     .update({ troop_id: troop.id, role: 'admin' })
     .eq('id', user.id)
@@ -39,7 +41,7 @@ export async function createTroop(
   const invites: Pick<Invitation, 'token' | 'role'>[] = []
 
   for (const role of roles) {
-    const { data: invite } = await supabase
+    const { data: invite } = await db
       .from('invitations')
       .insert({ troop_id: troop.id, role, invited_by: user.id })
       .select('token, role')
@@ -102,5 +104,7 @@ export async function completeProfile(
 
   if (error) return { error: error.message }
 
-  redirect('/discover')
+  const rawReturnTo = formData.get('returnTo') as string | null
+  const returnTo = rawReturnTo?.startsWith('/') ? rawReturnTo : '/discover'
+  redirect(returnTo)
 }

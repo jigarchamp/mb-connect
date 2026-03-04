@@ -2,6 +2,7 @@
 
 import { useState, useTransition, useMemo } from 'react'
 import { useRouter } from 'next/navigation'
+import Link from 'next/link'
 import { toggleInterest } from '@/app/actions/badges'
 import type { MeritBadge } from '@/types/database'
 
@@ -10,6 +11,7 @@ interface Props {
   isAuthenticated: boolean
   initialInterests: string[]
   initialCompletions: string[]
+  badgesWithClasses: string[]
 }
 
 function StarIcon({ filled }: { filled: boolean }) {
@@ -29,12 +31,14 @@ export default function CatalogClient({
   isAuthenticated,
   initialInterests,
   initialCompletions,
+  badgesWithClasses,
 }: Props) {
+  const classSet = useMemo(() => new Set(badgesWithClasses), [badgesWithClasses])
   const router = useRouter()
   const [query, setQuery] = useState('')
   const [categoryFilter, setCategoryFilter] = useState('all')
   const [eagleOnly, setEagleOnly] = useState(false)
-  const [hideCompleted, setHideCompleted] = useState(true)
+  const [showCompletedOnly, setShowCompletedOnly] = useState(false)
   const [interests, setInterests] = useState(new Set(initialInterests))
   const completions = useMemo(() => new Set(initialCompletions), [initialCompletions])
   const [isPending, startTransition] = useTransition()
@@ -47,7 +51,7 @@ export default function CatalogClient({
 
   const filtered = useMemo(() => {
     return badges.filter(b => {
-      if (hideCompleted && isAuthenticated && completions.has(b.id)) return false
+      if (showCompletedOnly && isAuthenticated && !completions.has(b.id)) return false
       if (eagleOnly && !b.eagle_required) return false
       if (categoryFilter !== 'all' && b.category !== categoryFilter) return false
       if (query.trim()) {
@@ -56,7 +60,7 @@ export default function CatalogClient({
       }
       return true
     })
-  }, [badges, query, categoryFilter, eagleOnly, hideCompleted, isAuthenticated, completions])
+  }, [badges, query, categoryFilter, eagleOnly, showCompletedOnly, isAuthenticated, completions])
 
   const handleToggle = (badgeId: string) => {
     if (!isAuthenticated) {
@@ -80,16 +84,6 @@ export default function CatalogClient({
 
   return (
     <div className="max-w-lg mx-auto px-4 pt-4 pb-6">
-      {/* Non-auth prompt */}
-      {!isAuthenticated && (
-        <div className="bg-green-50 border border-green-100 rounded-xl p-3 mb-4 text-center">
-          <p className="text-sm text-green-800 font-medium">Track your merit badge journey</p>
-          <p className="text-xs text-green-700 mt-0.5">
-            <a href="/signup" className="underline font-medium">Create a free account</a> to add badges to your wishlist and sign up for classes.
-          </p>
-        </div>
-      )}
-
       {/* Search */}
       <div className="relative mb-3">
         <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.75} stroke="currentColor" className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-gray-400">
@@ -118,9 +112,9 @@ export default function CatalogClient({
         </button>
         {isAuthenticated && (
           <button
-            onClick={() => setHideCompleted(h => !h)}
+            onClick={() => setShowCompletedOnly(v => !v)}
             className={`shrink-0 text-xs font-medium px-3 py-1.5 rounded-full border transition-colors ${
-              !hideCompleted
+              showCompletedOnly
                 ? 'bg-green-700 border-green-700 text-white'
                 : 'bg-white border-gray-200 text-gray-600 hover:border-gray-300'
             }`}
@@ -154,15 +148,23 @@ export default function CatalogClient({
         {filtered.map(badge => {
           const isInterested = interests.has(badge.id)
           const isCompleted = isAuthenticated && completions.has(badge.id)
+          const hasClass = classSet.has(badge.id)
           const isLoading = pendingId === badge.id && isPending
 
           return (
             <li
               key={badge.id}
-              className={`bg-white rounded-xl border px-4 py-3 flex items-center gap-3 transition-opacity ${
+              className={`relative bg-white rounded-xl border px-4 py-3 flex items-center gap-3 transition-opacity ${
                 isCompleted ? 'opacity-60 border-gray-100' : 'border-gray-100'
               }`}
             >
+              {/* Stretched link covers the whole card */}
+              <Link
+                href={`/merit-badges/${badge.id}`}
+                className="absolute inset-0 rounded-xl"
+                aria-label={badge.name}
+              />
+
               <div className="flex-1 min-w-0">
                 <div className="flex items-center gap-1.5 flex-wrap">
                   {isCompleted && (
@@ -176,6 +178,21 @@ export default function CatalogClient({
                   {badge.eagle_required && (
                     <span className="text-xs font-medium text-amber-600 bg-amber-50 px-1.5 py-0.5 rounded-full">Eagle</span>
                   )}
+                  {isInterested && (
+                    <span className="text-xs font-medium text-amber-600 bg-amber-50 px-1.5 py-0.5 rounded-full">Wishlisted</span>
+                  )}
+                  {hasClass && (
+                    <span
+                      className="text-xs font-medium text-blue-600 bg-blue-50 px-1.5 py-0.5 rounded-full flex items-center gap-0.5"
+                      title="Class available"
+                      aria-label="Class available"
+                    >
+                      <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor" className="w-3 h-3">
+                        <path strokeLinecap="round" strokeLinejoin="round" d="M6.75 3v2.25M17.25 3v2.25M3 18.75V7.5a2.25 2.25 0 0 1 2.25-2.25h13.5A2.25 2.25 0 0 1 21 7.5v11.25m-18 0A2.25 2.25 0 0 0 5.25 21h13.5A2.25 2.25 0 0 0 21 18.75m-18 0v-7.5A2.25 2.25 0 0 1 5.25 9h13.5A2.25 2.25 0 0 1 21 9v7.5" />
+                      </svg>
+                      Class available
+                    </span>
+                  )}
                 </div>
                 <p className="text-xs text-gray-400 mt-0.5">{badge.category}</p>
               </div>
@@ -184,8 +201,8 @@ export default function CatalogClient({
                 onClick={() => handleToggle(badge.id)}
                 disabled={isLoading}
                 aria-label={isInterested ? 'Remove from wishlist' : 'Add to wishlist'}
-                className={`shrink-0 transition-colors disabled:opacity-50 ${
-                  isInterested ? 'text-green-600' : 'text-gray-300 hover:text-gray-400'
+                className={`relative z-10 shrink-0 transition-colors disabled:opacity-50 ${
+                  isInterested ? 'text-amber-500' : 'text-gray-300 hover:text-gray-400'
                 }`}
               >
                 <StarIcon filled={isInterested} />

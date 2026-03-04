@@ -2,7 +2,11 @@ import { redirect } from 'next/navigation'
 import { createClient } from '@/lib/supabase/server'
 import { OnboardingClient } from './OnboardingClient'
 
-export default async function OnboardingPage() {
+export default async function OnboardingPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ returnTo?: string }>
+}) {
   const supabase = await createClient()
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) redirect('/login')
@@ -13,8 +17,10 @@ export default async function OnboardingPage() {
     .eq('id', user.id)
     .single()
 
-  // If fully onboarded, send to app
-  if (profile?.troop_id && (profile.role !== 'scout' || (profile.rank && profile.date_of_birth))) {
+  const { returnTo } = await searchParams
+
+  // Only redirect fully-onboarded users when not in edit mode
+  if (!returnTo && profile?.troop_id && (profile.role !== 'scout' || (profile.rank && profile.date_of_birth))) {
     redirect('/discover')
   }
 
@@ -26,9 +32,11 @@ export default async function OnboardingPage() {
             <span className="text-white text-2xl font-bold">MB</span>
           </div>
           <h1 className="text-2xl font-bold text-gray-900">MB Connect</h1>
-          <p className="text-sm text-gray-500 mt-1">Let&apos;s get you set up</p>
+          <p className="text-sm text-gray-500 mt-1">
+            {returnTo ? 'Update your profile' : 'Let\'s get you set up'}
+          </p>
         </div>
-        <OnboardingClient profile={profile} />
+        <OnboardingClient profile={profile} returnTo={returnTo} />
       </div>
     </div>
   )

@@ -1,7 +1,7 @@
 import { createServerClient } from '@supabase/ssr'
 import { NextResponse, type NextRequest } from 'next/server'
 
-export async function proxy(request: NextRequest) {
+export async function middleware(request: NextRequest) {
   let supabaseResponse = NextResponse.next({ request })
 
   const supabase = createServerClient(
@@ -28,7 +28,11 @@ export async function proxy(request: NextRequest) {
 
   const { pathname } = request.nextUrl
   const isAuthPage = pathname === '/login' || pathname === '/signup'
-  const isPublic = pathname === '/' || isAuthPage || pathname.startsWith('/join/')
+  const isPublic =
+    pathname === '/' ||
+    isAuthPage ||
+    pathname.startsWith('/join/') ||
+    pathname.startsWith('/merit-badges/')
 
   if (!user && !isPublic) {
     const url = request.nextUrl.clone()
