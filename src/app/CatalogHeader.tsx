@@ -16,7 +16,15 @@ export default function CatalogHeader({ isAuthenticated, firstName }: Props) {
       </div>
 
       {isAuthenticated ? (
-        <span className="text-sm text-gray-500">Hi, {firstName}</span>
+        <Link
+          href="/profile"
+          className="w-8 h-8 rounded-full bg-green-100 flex items-center justify-center hover:bg-green-200 transition-colors"
+          aria-label="Profile"
+        >
+          <span className="text-green-800 text-sm font-semibold">
+            {firstName?.[0]?.toUpperCase() ?? '?'}
+          </span>
+        </Link>
       ) : (
         <div className="flex items-center gap-2">
           <Link

@@ -1,4 +1,5 @@
 import { redirect } from 'next/navigation'
+import Link from 'next/link'
 import { createClient } from '@/lib/supabase/server'
 import BottomNav from './BottomNav'
 
@@ -26,7 +27,13 @@ export default async function AppLayout({ children }: { children: React.ReactNod
           </div>
           <span className="font-semibold text-gray-900 text-sm">MB Connect</span>
         </div>
-        <span className="text-sm text-gray-500">Hi, {profile.first_name}</span>
+        <Link
+          href="/profile"
+          className="w-8 h-8 rounded-full bg-green-100 flex items-center justify-center hover:bg-green-200 transition-colors"
+          aria-label="Profile"
+        >
+          <span className="text-green-800 text-sm font-semibold">{profile.first_name[0].toUpperCase()}</span>
+        </Link>
       </header>
 
       {/* Main content — pad bottom for nav */}

@@ -3,6 +3,16 @@ import Link from 'next/link'
 import { createClient } from '@/lib/supabase/server'
 import { RANK_LABELS, type Rank } from '@/types/database'
 import BadgeActions from './BadgeActions'
+import BottomNav from '@/app/(app)/BottomNav'
+
+type ClassListing = {
+  id: string
+  session_date: string
+  sessions_count: number | null
+  capacity: number | null
+  status: string
+  counselor: { first_name: string; last_name: string }
+}
 
 function DifficultyDots({ value }: { value: number }) {
   return (
@@ -16,6 +26,14 @@ function DifficultyDots({ value }: { value: number }) {
     </div>
   )
 }
+
+function formatDate(dateStr: string): string {
+  const [year, month, day] = dateStr.split('-').map(Number)
+  return new Date(year, month - 1, day).toLocaleDateString('en-US', {
+    weekday: 'short', month: 'short', day: 'numeric',
+  })
+}
+
 
 export default async function MeritBadgeDetailPage({
   params,
@@ -36,27 +54,69 @@ export default async function MeritBadgeDetailPage({
   const { data: { user } } = await supabase.auth.getUser()
 
   let role: string | null = null
+  let firstName: string | null = null
   let isInterested = false
   let isCompleted = false
   let openClassId: string | null = null
+  let openClassDate: string | null = null
+  let availableClasses: ClassListing[] = []
+  let enrollmentCounts: Record<string, number> = {}
+  let myRegistrations: Record<string, string> = {} // classId → 'registered' | 'waitlisted'
 
   if (user) {
     const { data: profile } = await supabase
       .from('profiles')
-      .select('role')
+      .select('role, first_name')
       .eq('id', user.id)
       .single()
     role = profile?.role ?? null
+    firstName = profile?.first_name ?? null
+
+    // Fetch all open/full classes for this badge visible to this user
+    const { data: rawClasses } = await supabase
+      .from('classes')
+      .select('id, session_date, sessions_count, capacity, status, counselor:profiles!counselor_id(first_name, last_name)')
+      .eq('merit_badge_id', id)
+      .in('status', ['open', 'full'])
+      .order('session_date', { ascending: true })
+
+    availableClasses = (rawClasses ?? []) as unknown as ClassListing[]
+
+    // Fetch enrollment counts for all those classes in one query
+    if (availableClasses.length > 0) {
+      const classIds = availableClasses.map(c => c.id)
+      const { data: regs } = await supabase
+        .from('registrations')
+        .select('class_id')
+        .in('class_id', classIds)
+        .eq('status', 'registered')
+      for (const reg of regs ?? []) {
+        enrollmentCounts[reg.class_id] = (enrollmentCounts[reg.class_id] ?? 0) + 1
+      }
+    }
 
     if (role === 'scout') {
-      const [{ data: interest }, { data: completion }, { data: openClass }] = await Promise.all([
+      const firstOpen = availableClasses.find(c => c.status === 'open')
+      openClassId = firstOpen?.id ?? null
+      openClassDate = firstOpen?.session_date ?? null
+
+      const [{ data: interest }, { data: completion }] = await Promise.all([
         supabase.from('interests').select('id').eq('scout_id', user.id).eq('merit_badge_id', id).maybeSingle(),
         supabase.from('completions').select('id').eq('scout_id', user.id).eq('merit_badge_id', id).maybeSingle(),
-        supabase.from('classes').select('id').eq('merit_badge_id', id).eq('status', 'open').limit(1).maybeSingle(),
       ])
       isInterested = !!interest
       isCompleted = !!completion
-      openClassId = openClass?.id ?? null
+
+      if (availableClasses.length > 0) {
+        const { data: myRegs } = await supabase
+          .from('registrations')
+          .select('class_id, status')
+          .eq('scout_id', user.id)
+          .in('class_id', availableClasses.map(c => c.id))
+        for (const reg of myRegs ?? []) {
+          myRegistrations[reg.class_id] = reg.status
+        }
+      }
     }
   }
 
@@ -67,25 +127,34 @@ export default async function MeritBadgeDetailPage({
   return (
     <div className="min-h-screen bg-gray-50">
       {/* Header */}
-      <header className="bg-white border-b border-gray-100 px-4 py-3 flex items-center gap-3 sticky top-0 z-10">
+      <header className="bg-white border-b border-gray-100 sticky top-0 z-10 flex items-center justify-between pr-4">
         <Link
           href="/"
-          className="text-gray-400 hover:text-gray-600 transition-colors"
+          className="flex items-center gap-3 px-4 py-3 hover:bg-gray-50 transition-colors"
           aria-label="Back to catalog"
         >
-          <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor" className="w-5 h-5">
+          <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor" className="w-5 h-5 text-gray-400 shrink-0">
             <path strokeLinecap="round" strokeLinejoin="round" d="M10.5 19.5 3 12m0 0 7.5-7.5M3 12h18" />
           </svg>
-        </Link>
-        <div className="flex items-center gap-2">
-          <div className="w-7 h-7 rounded-lg bg-green-700 flex items-center justify-center shrink-0">
-            <span className="text-white text-xs font-bold">MB</span>
+          <div className="flex items-center gap-2">
+            <div className="w-7 h-7 rounded-lg bg-green-700 flex items-center justify-center shrink-0">
+              <span className="text-white text-xs font-bold">MB</span>
+            </div>
+            <span className="font-semibold text-gray-900 text-sm">MB Connect</span>
           </div>
-          <span className="font-semibold text-gray-900 text-sm">MB Connect</span>
-        </div>
+        </Link>
+        {firstName && (
+          <Link
+            href="/profile"
+            className="w-8 h-8 rounded-full bg-green-100 flex items-center justify-center hover:bg-green-200 transition-colors shrink-0"
+            aria-label="Profile"
+          >
+            <span className="text-green-800 text-sm font-semibold">{firstName[0].toUpperCase()}</span>
+          </Link>
+        )}
       </header>
 
-      <main className="max-w-lg mx-auto px-4 py-6 space-y-4">
+      <main className={`max-w-lg mx-auto px-4 py-6 space-y-4${role ? ' pb-24' : ''}`}>
         {/* Badge name + eagle */}
         <div>
           <div className="flex items-start gap-2 flex-wrap">
@@ -107,6 +176,8 @@ export default async function MeritBadgeDetailPage({
           isInterested={isInterested}
           isCompleted={isCompleted}
           openClassId={openClassId}
+          openClassDate={openClassDate}
+          isSignedUpForOpenClass={openClassId ? myRegistrations[openClassId] === 'registered' : false}
         />
 
         {/* Metadata */}
@@ -170,6 +241,61 @@ export default async function MeritBadgeDetailPage({
           </div>
         )}
 
+        {/* Available classes */}
+        {availableClasses.length > 0 && (
+          <div className="bg-white rounded-2xl border border-gray-100 px-4 py-4">
+            <h2 className="text-sm font-semibold text-gray-900 mb-3">
+              Available classes ({availableClasses.length})
+            </h2>
+            <div className="space-y-2">
+              {availableClasses.map((cls) => {
+                const myReg = myRegistrations[cls.id] // 'registered' | 'waitlisted' | undefined
+                const enrolled = enrollmentCounts[cls.id] ?? 0
+                const spots = cls.capacity != null ? cls.capacity - enrolled : null
+                const sessions = cls.sessions_count && cls.sessions_count > 1
+                  ? `${cls.sessions_count} sessions`
+                  : 'Single session'
+
+                // Right-side label: my enrollment status takes priority over spots
+                const { rightLabel, rightColor } = myReg === 'registered'
+                  ? { rightLabel: 'Already enrolled', rightColor: 'text-green-700' }
+                  : myReg === 'waitlisted'
+                    ? { rightLabel: 'Waitlisted', rightColor: 'text-amber-600' }
+                    : cls.status === 'full'
+                      ? { rightLabel: 'Full', rightColor: 'text-red-500' }
+                      : spots == null
+                        ? { rightLabel: 'Open', rightColor: 'text-green-700' }
+                        : spots <= 3
+                          ? { rightLabel: `${spots} spot${spots !== 1 ? 's' : ''} left`, rightColor: 'text-amber-600' }
+                          : { rightLabel: `${spots} spots left`, rightColor: 'text-green-700' }
+
+                return (
+                  <Link
+                    key={cls.id}
+                    href={`/classes/${cls.id}`}
+                    className="flex items-center justify-between rounded-xl border border-gray-100 px-3 py-3 hover:bg-gray-50 transition-colors group"
+                  >
+                    <div className="min-w-0">
+                      <p className="text-sm font-medium text-gray-900 group-hover:text-green-700 transition-colors">
+                        {formatDate(cls.session_date)}
+                      </p>
+                      <p className="text-xs text-gray-500 mt-0.5">
+                        {sessions} · {cls.counselor.first_name} {cls.counselor.last_name}
+                      </p>
+                    </div>
+                    <div className="flex items-center gap-2 shrink-0 ml-3">
+                      <span className={`text-xs font-medium ${rightColor}`}>{rightLabel}</span>
+                      <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor" className="w-4 h-4 text-gray-300 group-hover:text-gray-400">
+                        <path strokeLinecap="round" strokeLinejoin="round" d="m8.25 4.5 7.5 7.5-7.5 7.5" />
+                      </svg>
+                    </div>
+                  </Link>
+                )
+              })}
+            </div>
+          </div>
+        )}
+
         {/* External links */}
         {hasLinks && (
           <div className="bg-white rounded-2xl border border-gray-100 divide-y divide-gray-50">
@@ -202,6 +328,7 @@ export default async function MeritBadgeDetailPage({
           </div>
         )}
       </main>
+      {role && <BottomNav role={role} />}
     </div>
   )
 }

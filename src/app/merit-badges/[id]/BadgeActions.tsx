@@ -11,6 +11,13 @@ interface Props {
   isInterested: boolean
   isCompleted: boolean
   openClassId: string | null
+  openClassDate: string | null
+  isSignedUpForOpenClass: boolean
+}
+
+function shortDate(dateStr: string): string {
+  const [, m, d] = dateStr.split('-')
+  return `${Number(m)}/${Number(d)}`
 }
 
 export default function BadgeActions({
@@ -20,6 +27,8 @@ export default function BadgeActions({
   isInterested: initialInterested,
   isCompleted: initialCompleted,
   openClassId,
+  openClassDate,
+  isSignedUpForOpenClass,
 }: Props) {
   const [interested, setInterested] = useState(initialInterested)
   const [completed, setCompleted] = useState(initialCompleted)
@@ -31,12 +40,12 @@ export default function BadgeActions({
   if (!isAuthenticated) {
     return (
       <div className="bg-green-50 border border-green-100 rounded-2xl px-4 py-4 text-center">
-        <p className="text-sm font-medium text-green-900">Track your progress</p>
+        <p className="text-sm font-medium text-green-900">Sign up for a class or track your progress</p>
         <p className="text-xs text-green-700 mt-1">
           <Link href="/login" className="underline underline-offset-2">Sign in</Link>
           {' '}or{' '}
           <Link href="/signup" className="underline underline-offset-2">create an account</Link>
-          {' '}to wishlist and mark badges complete.
+          {' '}to enroll in classes, wishlist badges, and mark completions.
         </p>
       </div>
     )
@@ -142,9 +151,12 @@ export default function BadgeActions({
       {openClassId && (
         <Link
           href={`/classes/${openClassId}`}
-          className="block text-center px-4 py-2.5 rounded-xl text-sm font-medium border border-green-200 text-green-700 hover:bg-green-50 transition-colors"
+          className="flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl text-sm font-medium border border-green-200 text-green-700 hover:bg-green-50 transition-colors"
         >
-          Sign Up for a Class
+          <span>{openClassDate ? `Sign up for class starting ${shortDate(openClassDate)}` : 'Sign up for a class'}</span>
+          {isSignedUpForOpenClass && (
+            <span className="text-xs bg-green-700 text-white px-1.5 py-0.5 rounded-full font-medium shrink-0">Already enrolled</span>
+          )}
         </Link>
       )}
     </div>
