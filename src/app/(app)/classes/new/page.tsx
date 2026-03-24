@@ -3,7 +3,11 @@ import Link from 'next/link'
 import { createClient } from '@/lib/supabase/server'
 import { createClass } from '@/app/actions/classes'
 
-export default async function NewClassPage() {
+export default async function NewClassPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ badge_id?: string }>
+}) {
   const supabase = await createClient()
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) redirect('/login')
@@ -16,6 +20,8 @@ export default async function NewClassPage() {
 
   if (!profile?.troop_id) redirect('/onboarding')
   if (!['counselor', 'leader', 'admin'].includes(profile.role)) redirect('/classes')
+
+  const { badge_id: prefilledBadgeId } = await searchParams
 
   const { data: badges } = await supabase
     .from('merit_badges')
@@ -43,7 +49,7 @@ export default async function NewClassPage() {
             id="merit_badge_id"
             name="merit_badge_id"
             required
-            defaultValue=""
+            defaultValue={prefilledBadgeId ?? ''}
             className="w-full px-3 py-2.5 rounded-xl border border-gray-200 bg-white text-sm text-gray-900 focus:outline-none focus:ring-2 focus:ring-green-600 focus:border-transparent"
           >
             <option value="" disabled>Select a merit badge…</option>

@@ -56,7 +56,7 @@ const COUNSELOR_NAV: NavItem[] = [
 
 export default function BottomNav({ role }: { role: string }) {
   const pathname = usePathname()
-  const navItems = role === 'counselor' ? COUNSELOR_NAV : SCOUT_NAV
+  const navItems = role === 'scout' ? SCOUT_NAV : COUNSELOR_NAV
 
   return (
     <nav className="fixed bottom-0 left-0 right-0 bg-white border-t border-gray-100 z-10">
