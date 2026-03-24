@@ -1,7 +1,7 @@
 import { redirect } from 'next/navigation'
 import Link from 'next/link'
 import { createClient } from '@/lib/supabase/server'
-import ClassList from '../classes/ClassList'
+import ClassList from '../../classes/ClassList'
 
 export default async function MyClassesPage() {
   const supabase = await createClient()

@@ -6,9 +6,15 @@ MB CONNECT — SPRINT BACKLOG
 HOUSEKEEPING — ISSUES TO CLOSE (ALREADY IMPLEMENTED)
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
+#85  UX: Make header avatar the profile ingress; remove Profile from bottom nav
+     → Implemented: avatar circle with initials added to all three header
+       contexts (CatalogHeader, (app)/layout, merit-badges/[id]/page).
+       Profile tab removed from SCOUT_NAV and COUNSELOR_NAV. Shipped cc39114.
+       GitHub issue closed.
+
 #80  My Classes: separate closed/cancelled classes into a collapsible section
      → Implemented: ClassList.tsx splits by ENDED_STATUSES, "Ended (N)" <details>
-       section added. Done in the last session.
+       section added.
 
 #19  Default catalog view shows all MBs with no filters applied
      → Implemented: CatalogClient initializes with categoryFilter='all',
@@ -29,20 +35,29 @@ SPRINT PRIORITIES
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
 ────────────────────────────────────────────────────────────────────────────────
-#1 — Issue #85: UX: Make header avatar the profile ingress; remove Profile from
-     bottom nav
+#1 — Issue #87: Story: Counselor Demand screen — ranked badge interest with
+     class gap analysis
 ────────────────────────────────────────────────────────────────────────────────
-WHY NOW: The header "Hi, name" is dead real estate and Profile occupies a bottom
-nav slot that could be reclaimed for core content tabs. This is fully spec'd
-(avatar circle with initials, link to /profile, drop to 3 tabs), touches only
-two files (layout.tsx + BottomNav.tsx), and has zero backend work. It's the
-lowest-effort, highest-polish change in the backlog. Completing it before alpha
-means testers experience the intended navigation from day one.
+WHY NOW: Alpha testing is starting and counselors need this to make informed
+decisions about what classes to offer. The bottom nav "Demand" tab already
+exists and currently 404s. The backend view (troop_mb_demand) is partially
+built; this sprint adds unmet-demand logic (excludes already-enrolled scouts)
+and the full page UI. Highest priority for alpha readiness.
 
-QUESTIONS: None — design decisions already made in the issue.
+QUESTIONS: None — fully spec'd in issue #87.
 
 ────────────────────────────────────────────────────────────────────────────────
-#2 — Issue #22: Story: MB card — hide auth-gated elements for guests
+#2 — Issue #86: Story: Upcoming classes page — publicly visible class discovery
+────────────────────────────────────────────────────────────────────────────────
+WHY NOW: The first thing scouts (authenticated or not) want to see is which
+classes are open. A 2-class preview section on the home page + a dedicated
+public /classes page addresses this with no new backend work. Critical for
+scout-side alpha experience.
+
+QUESTIONS: None — fully spec'd in issue #86.
+
+────────────────────────────────────────────────────────────────────────────────
+#3 — Issue #22: Story: MB card — hide auth-gated elements for guests
 ────────────────────────────────────────────────────────────────────────────────
 WHY NOW: Unauthenticated users currently see the star/wishlist button and
 completed checkmark on catalog cards — both are meaningless without an account.
@@ -55,21 +70,20 @@ QUESTIONS: None — acceptance criteria are clear; the isAuthenticated prop is
 already threaded through CatalogClient.
 
 ────────────────────────────────────────────────────────────────────────────────
-#3 — Issue #18: Story: Add 'Open Enrollment' filter to catalog
+#4 — Issue #18: Story: Add 'Open Enrollment' filter to catalog
 ────────────────────────────────────────────────────────────────────────────────
-WHY NOW: Issue #21 (class available chip) was just implemented and the
-badgesWithClasses set is already in CatalogClient. Adding a filter chip to
-narrow the catalog to only badges with open classes is a ~5-line change on top
-of existing infrastructure. It completes the catalog filtering feature (#6) and
-makes the chip actionable rather than just decorative. High value, trivial effort.
+WHY NOW: The badgesWithClasses set is already in CatalogClient. Adding a filter
+chip to narrow the catalog to only badges with open classes is a ~5-line change
+on top of existing infrastructure. Pairs well with #86 — users who discover
+classes (#86) will naturally want to filter the badge catalog to "only badges
+I can enroll in right now." Completes the catalog filtering feature (#6).
 
 QUESTIONS:
 - Should the filter chip be hidden (or shown disabled) when no badges have open
-  classes, or always shown? The issue says "hidden or shown with a disabled/empty
-  state" — which do we prefer?
+  classes, or always shown?
 
 ────────────────────────────────────────────────────────────────────────────────
-#4 — Issue #60: Story: Counselor — add/remove MBs they are qualified to teach
+#5 — Issue #60: Story: Counselor — add/remove MBs they are qualified to teach
 ────────────────────────────────────────────────────────────────────────────────
 WHY NOW: This is the foundational piece of the counselor teaching profile feature
 (#45). It unblocks issues #59 (qualifications shown on profile), #63 (class
@@ -85,7 +99,7 @@ QUESTIONS:
   qualifications on their behalf?
 
 ────────────────────────────────────────────────────────────────────────────────
-#5 — Issue #59: Story: Counselor — teaching qualifications shown on profile page
+#6 — Issue #59: Story: Counselor — teaching qualifications shown on profile page
 ────────────────────────────────────────────────────────────────────────────────
 WHY NOW: Natural follow-on to #60; once the counselor_badges table exists,
 displaying the list on the profile page is straightforward. Gives counselors
@@ -99,7 +113,7 @@ QUESTIONS:
   themselves?
 
 ────────────────────────────────────────────────────────────────────────────────
-#6 — Issue #66: Story: MB detail page — list available counselors for this badge
+#7 — Issue #66: Story: MB detail page — list available counselors for this badge
 ────────────────────────────────────────────────────────────────────────────────
 WHY NOW: Depends on #60/#59. Once counselors have declared their qualifications,
 surfacing them on the MB detail page closes the discovery loop: a scout can see
@@ -114,7 +128,7 @@ QUESTIONS:
 - Should it be visible to counselors and leaders too, or scouts only?
 
 ────────────────────────────────────────────────────────────────────────────────
-#7 — Issue #63: Story: Class creation form scoped to counselor's qualified MBs
+#8 — Issue #63: Story: Class creation form scoped to counselor's qualified MBs
 ────────────────────────────────────────────────────────────────────────────────
 WHY NOW: Depends on #60. Right now the "Create a Class" form shows all ~135
 merit badges. For counselors this is noisy and allows them to create classes for
@@ -129,7 +143,7 @@ QUESTIONS:
   show the full list with a warning banner?
 
 ────────────────────────────────────────────────────────────────────────────────
-#8 — Issue #48: Story: Roster — view all troop members with role and join date
+#9 — Issue #48: Story: Roster — view all troop members with role and join date
 ────────────────────────────────────────────────────────────────────────────────
 WHY NOW: Admin/leader visibility into their troop is a basic governance feature.
 Without a roster view, admins have no way to confirm who has joined, verify
@@ -144,7 +158,7 @@ QUESTIONS:
   These could differ if someone signed up independently.
 
 ────────────────────────────────────────────────────────────────────────────────
-#9 — Issue #17: Story: Category selector UX design spike
+#10 — Issue #17: Story: Category selector UX design spike
 ────────────────────────────────────────────────────────────────────────────────
 WHY NOW: The current horizontal-scroll chip row for categories works but has
 poor discoverability — users don't realize they can scroll it. This is the most
@@ -160,7 +174,7 @@ QUESTIONS:
   perspective? A spike/prototype comparison is the output of this issue.
 
 ────────────────────────────────────────────────────────────────────────────────
-#10 — Issue #46: Feature: Onboarding improvements
+#11 — Issue #46: Feature: Onboarding improvements
 ────────────────────────────────────────────────────────────────────────────────
 WHY NOW: New users (scouts and counselors) complete onboarding and are dropped at
 the catalog with no orientation — no celebration, no guidance, no clear next
@@ -180,11 +194,13 @@ QUESTIONS:
 SPRINT SUMMARY
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
-This sprint polishes the app to alpha-ready state across three fronts: the
-catalog experience (guest cleanup, open-enrollment filter, category UX), the
-counselor identity layer (teaching qualifications, scoped class creation, visible
-on MB detail), and troop-level shell polish (header avatar nav, roster view,
-onboarding welcome). By the end of the sprint, scouts can discover which
-counselors in their troop teach which badges, the public catalog is clean for
-unauthenticated visitors, and admins have basic roster visibility — giving the
-app enough depth and polish to begin structured alpha testing with a real troop.
+This sprint is anchored by alpha testing readiness on both sides of the app.
+Issue #87 (Demand screen) is the top priority — counselors need it to decide
+what classes to offer, the nav tab already exists and 404s, and it's the core
+counselor value proposition for alpha. Issue #86 (public upcoming classes)
+follows immediately, addressing the primary thing scouts want to see whether
+or not they're logged in. Together #87 and #86 make the app testable end-to-end
+for the alpha cohort. Issues #22 and #18 complete guest-facing catalog polish.
+The counselor qualification chain (#60 → #59 → #66 → #63) is the next
+major feature block. Roster (#48), category UX (#17), and onboarding (#46)
+round out the sprint for admin and new-user readiness.
