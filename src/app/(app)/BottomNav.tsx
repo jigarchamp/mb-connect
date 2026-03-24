@@ -45,13 +45,13 @@ function ChartIcon() {
 const SCOUT_NAV: NavItem[] = [
   { href: '/', label: 'Discover', icon: <CompassIcon /> },
   { href: '/my-badges', label: 'My MBs', icon: <BadgeIcon /> },
-  { href: '/classes', label: 'Classes', icon: <CalendarIcon /> },
+  { href: '/my-classes', label: 'My Classes', icon: <CalendarIcon /> },
 ]
 
 const COUNSELOR_NAV: NavItem[] = [
   { href: '/', label: 'Discover', icon: <CompassIcon /> },
   { href: '/demand', label: 'Demand', icon: <ChartIcon /> },
-  { href: '/classes', label: 'My Classes', icon: <CalendarIcon /> },
+  { href: '/my-classes', label: 'My Classes', icon: <CalendarIcon /> },
 ]
 
 export default function BottomNav({ role }: { role: string }) {
